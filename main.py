@@ -197,6 +197,17 @@ def get_parser(**parser_kwargs):
     parser.add_argument("--init_words", 
         type=str, 
         help="Comma separated list of words used to initialize the embeddigs for training.")
+    
+    parser.add_argument(
+        "--checkpointing_steps",
+        type=int,
+        default=500,
+        help=(
+            "Save a checkpoint of the training state every X updates. These checkpoints can be used both as final"
+            " checkpoints in case they are better than the last checkpoint, and are also suitable for resuming"
+            " training using `--resume_from_checkpoint`."
+        ),
+    )
 
     return parser
 
@@ -720,9 +731,10 @@ if __name__ == "__main__":
             "target": "pytorch_lightning.callbacks.ModelCheckpoint",
             "params": {
                 "dirpath": ckptdir,
-                "filename": "{epoch:06}",
+                "filename": "{epoch:06}-{step:09}",
                 "verbose": True,
                 "save_last": True,
+                'every_n_train_steps': 300,
             }
         }
         if hasattr(model, "monitor"):
