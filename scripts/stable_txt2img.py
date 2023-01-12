@@ -188,6 +188,9 @@ def main():
         opt.config = "configs/latent-diffusion/txt2img-1p4B-eval.yaml"
         opt.ckpt = "models/ldm/text2img-large/model.ckpt"
         opt.outdir = "outputs/txt2img-samples-laion400m"
+    
+    split_filename = opt.ckpt.split('/')
+    checkpoint_name = split_filename[-2] + '_' + os.path.splitext(split_filename[-1])[0]
 
     seed_everything(opt.seed)
 
@@ -211,13 +214,19 @@ def main():
     if not opt.from_file:
         prompt = opt.prompt
         assert prompt is not None
-        data = [batch_size * [prompt]]
+        data = []
+        orig_list = prompt.split('|')
+        for element in orig_list:
+            data.append([element])
+        
 
     else:
         print(f"reading prompts from {opt.from_file}")
         with open(opt.from_file, "r") as f:
             data = f.read().splitlines()
             data = list(chunk(data, batch_size))
+
+    print(data)
 
     sample_path = os.path.join(outpath, "samples")
     os.makedirs(sample_path, exist_ok=True)
@@ -260,7 +269,7 @@ def main():
                             for x_sample in x_samples_ddim:
                                 x_sample = 255. * rearrange(x_sample.cpu().numpy(), 'c h w -> h w c')
                                 Image.fromarray(x_sample.astype(np.uint8)).save(
-                                    os.path.join(sample_path, f"{base_count:05}.jpg"))
+                                    os.path.join(sample_path, f"{checkpoint_name}_{base_count:05}.jpg"))
                                 base_count += 1
 
                         if not opt.skip_grid:
@@ -277,7 +286,7 @@ def main():
 
                     # to image
                     grid = 255. * rearrange(grid, 'c h w -> h w c').cpu().numpy()
-                    Image.fromarray(grid.astype(np.uint8)).save(os.path.join(outpath, f'{prompt[:180].replace(" ", "-")}-{grid_count:04}.jpg'))
+                    Image.fromarray(grid.astype(np.uint8)).save(os.path.join(outpath, f'{checkpoint_name}_{prompt[:180].replace(" ", "-")}-{grid_count:04}.jpg'))
                     grid_count += 1
                     
                     
